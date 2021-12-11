@@ -1,6 +1,9 @@
 from tkinter import*
+import socket
 import sqlite3
+import os
 import xml.etree.ElementTree as et
+
 
 interface = Tk()
 interface.title("Country Select")
@@ -13,16 +16,30 @@ for c in root.iter('Country'):
     if (c.text not in listOptions):
         listOptions.append(c.text)
 
-selected = []
+selected = [] #needed data
 
 prompt = Label(interface, text = "CHOOSE YOUR COUNTRY", font = ("arial", 15))
 prompt.pack()
 
 def select():
     selected.append(clicked.get())
+    print(selected)
+    interface.destroy()
+    s = socket.socket()
+    host = socket.gethostname()
+    port = 1998 #<-----------START
+    s.bind((host, port))
+    s.listen(3)
+    print(os.getcwd())
+    os.system('start cmd /k "python BusinessLayer.py"')#opens businessLayer
+    c, addr = s.accept()
+    print('connected to', addr)
+    c.send(selected[0].encode())
+    c.close()
+    
 
-closeButton = Button(interface, text = "Close and get plot", command = interface.destroy)
-closeButton.pack(side = 'bottom')
+closeButton = Button(interface, text = "CLOSE AND GET PLOT", command = select)
+closeButton.pack()
 
 #set datatype on menu
 clicked = StringVar()
@@ -32,5 +49,4 @@ clicked.set("COUNTRIES")
 pullDown = OptionMenu(interface, clicked, *listOptions)
 pullDown.pack()
 
-
-print(selected)
+#from here the program can create the UI and store the desired country

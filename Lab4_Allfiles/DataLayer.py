@@ -1,10 +1,13 @@
 #lab 4 data layer
 #uses SQl class from previous labs to create database from DataFile
 
+import socket
+import os
 import sqlite3
 import socket
 import re
 import xml.etree.ElementTree as et
+import json
 
 def isAlphaNum(str): #im using this to just make sure that only valid table names are used
     regex = "^[\sA-Za-z0-9_-]*$"
@@ -33,7 +36,6 @@ class database:
                 self.countryDB = sqlite3.connect('countries.db')
                 cursor = self.countryDB.cursor()
                 cursor.execute('''CREATE TABLE ''' + str('`' + name + '`') + '''( YEAR INTEGER PRIMARY KEY, VALUE REAL);''')
-                print("Table Created")
                 self.countryDB.commit()
                 if(self.countryDB):
                     self.countryDB.close()
@@ -48,6 +50,14 @@ class database:
         cursor.close()
         if(self.countryDB):
             self.countryDB.close()
+
+    def search(self, table):
+        self.countryDB = sqlite3.connect('countries.db')
+        cursor = self.countryDB.cursor()
+        cursor.execute('''SELECT YEAR, VALUE FROM ''' + table)
+        result = cursor.fetchall()
+        return result
+        
 
 nations = database([])
 
@@ -81,4 +91,31 @@ for i in country: #populates each country table with their year and value
             
 #database is created from here on out
 
+
+def sendBack(nat):
+    jsonSock = socket.socket()
+    host = socket.gethostname()
+    port = 2000 #connect back to businesslayer for json string
+    jsonSock.bind((host, port))
+    jsonSock.listen(1)
+    jsonString = json.dumps(nations.search(nat))
+
+    c, addr = jsonSock.accept()
+    print('Connected to', addr)
+    c.send(jsonString.encode())
+    c.close()
+
+    
+#start 1999 client connect-----------------
+s = socket.socket()
+host = socket.gethostname()
+port = 1999 #connect to businessLayer
+s.connect((host, port))
+query = s.recv(1024).decode()
+print("recieved " + str(query))
+#start 2000 server connect-----------------
+sendBack(query) #sends back json string for query
+s.close()
+    
+    
 
